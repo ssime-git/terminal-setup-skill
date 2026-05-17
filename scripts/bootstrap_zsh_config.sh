@@ -11,7 +11,7 @@ write_if_missing() {
   if [[ -e "$path" ]]; then
     echo "skip: $path already exists"
   else
-    printf '%s' "$content" > "$path"
+    printf '%b' "$content" > "$path"
     echo "created: $path"
   fi
 }

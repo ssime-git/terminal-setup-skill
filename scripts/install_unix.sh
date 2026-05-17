@@ -14,6 +14,8 @@ INSTALL_TERMINAL_TOOLS=1
 INSTALL_AGENT_TOOLS=1
 PLAN_MD="$PLAN_MD_DEFAULT"
 
+# NOTE: node/npm are included for npm-based agent CLIs (Claude Code, OpenCode, etc.).
+# If you use a version manager (nvm, fnm), install node/npm through that instead.
 CORE_TERMINAL_TOOLS=(git curl zsh fzf zoxide eza bat fd ripgrep starship uv pipx node npm)
 AGENT_TOOLS=(hermes opencode claude codex aider gemini ollama gh)
 SELECTED_AGENT_TOOLS=()
@@ -69,6 +71,10 @@ ask_yes_no() {
   if [[ "$NON_INTERACTIVE" -eq 1 ]]; then
     return 1
   fi
+  if [[ ! -t 0 ]]; then
+    warn "Cannot prompt interactively (no TTY). Use --non-interactive --yes to proceed."
+    return 1
+  fi
   local reply
   while true; do
     read -r -p "$prompt [y/n]: " reply
@@ -96,6 +102,8 @@ choose_pkg_manager() {
   fi
 }
 
+# WARNING: This case statement duplicates the PACKAGE_MAP dict in audit_env.py.
+# Keep both in sync when adding or changing package name mappings.
 pkg_name_for() {
   local manager="$1"
   local tool="$2"
@@ -278,12 +286,24 @@ parse_args() {
   done
 }
 
+check_prerequisites() {
+  if ! has_cmd python3 && ! has_cmd python; then
+    warn "Python 3 is required for the audit script. Install python3 first."
+  fi
+  if [[ "$PACKAGE_MANAGER" =~ ^(apt|dnf|yum|pacman)$ ]]; then
+    if ! sudo -n true 2>/dev/null; then
+      log "Note: some package manager operations may require sudo. You may be prompted."
+    fi
+  fi
+}
+
 main() {
   parse_args "$@"
 
   log "== Terminal Setup Installer (Unix / WSL / Linux / macOS) =="
   PACKAGE_MANAGER="$(choose_pkg_manager)"
   log "Detected package manager: $PACKAGE_MANAGER"
+  check_prerequisites
 
   if [[ -f "$AUDIT_SCRIPT" ]]; then
     log
@@ -365,7 +385,9 @@ main() {
   fi
 
   if [[ "$BOOTSTRAP_ZSH" -eq 1 ]]; then
-    if ask_yes_no "Run the Zsh bootstrap scaffold now?"; then
+    if ! has_cmd zsh; then
+      warn "Zsh is not installed. Install Zsh before applying the Zsh bootstrap scaffold."
+    elif ask_yes_no "Run the Zsh bootstrap scaffold now?"; then
       run_or_echo bash "$SCRIPT_DIR/bootstrap_zsh_config.sh"
     fi
   fi

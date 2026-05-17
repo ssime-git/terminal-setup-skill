@@ -35,6 +35,7 @@ AGENT_TOOLS = [
     {"key": "ollama", "commands": ["ollama"], "label": "Ollama"},
     {"key": "gh", "commands": ["gh"], "label": "GitHub CLI"},
     {"key": "python3", "commands": ["python3", "python"], "label": "Python"},
+    {"key": "deepseek", "commands": ["deepseek"], "label": "DeepSeek CLI"},
 ]
 
 PACKAGE_MAP: Dict[str, Dict[str, Optional[str]]] = {
@@ -217,6 +218,7 @@ ENV_AUTH_KEYS = {
     "codex": ["OPENAI_API_KEY"],
     "aider": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY"],
     "gemini": ["GOOGLE_API_KEY", "GEMINI_API_KEY"],
+    "deepseek": ["DEEPSEEK_API_KEY"],
 }
 
 

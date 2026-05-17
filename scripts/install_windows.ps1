@@ -166,7 +166,7 @@ if (-not (Has-Cmd 'aider')) {
   }
 }
 
-if (Ask-YesNo 'Hermes Agent is usually best installed inside WSL. Skip direct native Windows install?' $true) {
+if (Ask-YesNo 'Hermes Agent is best installed inside WSL rather than directly on Windows. Skip native install?' $true) {
   Write-Host 'Skipping native Windows Hermes install.'
 }
 

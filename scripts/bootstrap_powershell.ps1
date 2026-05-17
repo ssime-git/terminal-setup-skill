@@ -41,7 +41,7 @@ if (Get-Command starship -ErrorAction SilentlyContinue) {
 }
 
 if (Get-Command zoxide -ErrorAction SilentlyContinue) {
-  Invoke-Expression (& { (zoxide init powershell | Out-String) })
+  Invoke-Expression (&zoxide init powershell | Out-String)
 }
 
 function ll { eza --icons -lh }
