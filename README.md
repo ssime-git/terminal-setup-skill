@@ -37,7 +37,10 @@ bash scripts/bootstrap_zsh_config.sh
 | **fzf** | Fuzzy search for files, history, git | `Ctrl+T` (files), `Ctrl+R` (history) |
 | **pipx / uv** | Install and run Python CLI tools in isolation | `pipx install <tool>` or `uv tool install <tool>` |
 
-> **Icons not showing in VS Code terminal?** VS Code uses its own font setting, separate from Windows Terminal. Add this to your VS Code `settings.json`:
+> **Icons not showing in VS Code terminal?** VS Code uses its own font setting, separate from Windows Terminal. To add this to your VS Code `settings.json` :
+> 1.  Open it via `Ctrl+Shift+P` → `Preferences: Open User Settings (JSON)`
+> 2.  Add this to your VS Code `settings.json`:
+>
 > ```json
 > "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font"
 > ```
