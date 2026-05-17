@@ -19,6 +19,7 @@ Covers:
 
 | Step | Action | Command |
 |---|---|---|
+| Backup | Backup current dotfiles | `bash scripts/backup_dotfiles.sh` |
 | Audit | Run full audit | `python3 scripts/audit_env.py` |
 | Audit (Markdown plan) | Generate install plan | `python3 scripts/audit_env.py --plan-md output/install-plan.md` |
 | Install (Unix) | Full install | `bash scripts/install_unix.sh` |
@@ -98,6 +99,20 @@ Summarize:
 - OS-specific limitations
 - risky actions (e.g. changing the default shell)
 
+### Step 4.5 — Backup current setup
+
+Before making changes, run the backup script:
+
+```bash
+bash scripts/backup_dotfiles.sh
+```
+
+This preserves:
+- `~/.zshrc` (main Zsh config)
+- `~/.zshenv` (environment variables)
+- `~/.oh-my-zsh/custom/` (custom plugins and themes)
+- `~/.config/zsh/` (if bootstrap scaffold was already applied)
+
 ### Step 5 — Ask for confirmation
 
 > I have the full plan. Do you want me to proceed with installation/configuration?
@@ -150,11 +165,37 @@ python3 scripts/audit_env.py
 python3 scripts/audit_env.py --plan-md output/install-plan.md
 ```
 
-Then summarize:
-- what succeeded
-- what was skipped
-- what still needs manual login/auth
-- which next commands the user should run
+### Step 8 — Present final summary
+
+After verification, present a clear summary with the following structure:
+
+**What was installed / configured:**
+- List each tool installed with a one-line purpose (e.g. `starship` — modern prompt, `zoxide` — smart `cd`, etc.)
+- Mention which config files were created or modified
+
+**How to use each tool:**
+- `starship` — prompt is automatic on next shell; customize in `~/.config/zsh/starship.toml`
+- `zoxide` — use `z <dir>` to jump anywhere, `zi` for interactive picker
+- `eza` — `ls`, `ll`, `la`, `tree` now use eza with icons automatically
+- `fd` — `find` aliased to `fd`; use `fd <pattern>` for fast file search
+- `bat` — `cat` aliased to `bat` with syntax highlighting
+- `fzf` — `Ctrl+T` for file search, `Ctrl+R` for history search
+- `ripgrep` — `grep` aliased to `rg` for fast recursive search
+- `pipx` / `uv` — install Python CLI tools with `pipx install` or `uv tool install`
+
+**Backup location:**
+```
+Your previous shell config was backed up to:
+~/.terminal-backup-<timestamp>/
+
+Restore with:
+cp ~/.terminal-backup-<timestamp>/zshrc ~/.zshrc
+```
+
+**Remaining manual steps (if any):**
+- Login/auth commands for agent CLIs (e.g. `opencode auth login`, `claude`, `gh auth login`)
+- Font configuration for terminal (if Nerd Font not yet set)
+- Any optional tools not installed
 
 ## Scripts Reference
 
@@ -162,6 +203,7 @@ All scripts are in `scripts/`:
 
 | Script | Purpose |
 |---|---|
+| `backup_dotfiles.sh` | Timestamped backup of ~/.zshrc, ~/.zshenv, ~/.oh-my-zsh/custom, ~/.config/zsh |
 | `audit_env.py` | Cross-platform audit, package mapping, Markdown plan, JSON/text output |
 | `install_unix.sh` | Interactive installer for WSL/Linux/macOS with dry-run, non-interactive, Zsh bootstrap, font hints |
 | `install_windows.ps1` | Interactive installer for Windows (winget/choco/scoop) with dry-run, PowerShell bootstrap, font hints |
@@ -172,7 +214,7 @@ All scripts are in `scripts/`:
 
 - **Zsh**: a stronger interactive shell than stock Bash for many users
 - **PowerShell**: the native Windows-first shell, better than plain CMD for scripting and terminal customization
-- **Starship**: a modern, cross-shell prompt
+- **Starship**: a modern, cross-shell prompt with git branch, line-level diff metrics, and per-language indicators
 - **fzf**: fuzzy search for files and history
 - **zoxide**: faster directory jumping
 - **eza**: modern `ls` with icons and better formatting
@@ -181,6 +223,7 @@ All scripts are in `scripts/`:
 - **ripgrep**: fast recursive search
 - **uv / pipx**: cleaner CLI/tool installation for Python-based workflows
 - **Hermes / OpenCode / Claude Code / Codex / Aider / Gemini CLI / Ollama**: agent and local-model tooling
+- **DeepSeek CLI**: terminal access to the DeepSeek API
 - **GitHub CLI**: GitHub operations from the terminal
 - **Nerd Fonts**: required for many icons in prompts and file listings
 
@@ -201,17 +244,37 @@ All scripts are in `scripts/`:
 5. **Assuming package names are identical everywhere**
    - `bat` vs `batcat`, `fd` vs `fdfind`, package names vary per ecosystem.
 
-6. **Forgetting terminal font requirements**
+6. **Skipping backup before install**
+   - Always back up existing dotfiles before applying config changes. The installers make changes without built-in undo.
+
+7. **Forgetting terminal font requirements**
    - Prompt icons and file icons often require a Nerd Font.
 
-7. **Running without sudo access**
+8. **Running without sudo access**
    - System package managers (apt, dnf, yum, pacman) require sudo. Check before attempting install.
-
-8. **No rollback plan**
-   - The installers make changes without built-in undo. Advise the user to back up their dotfiles first if they have existing configs.
 
 9. **Skipping the audit**
    - Never install without running the audit first. The audit determines the correct package names and detects already-installed tools.
+
+10. **Invalid TOML escapes in `starship.toml`**
+    - Do not use `\$` in TOML files. TOML does not recognize `\$` as a valid escape.
+    - Starship template variables like `${count}` should be written as `"⇡${count}"` (no backslash), not `"⇡\${count}"`.
+    - Same applies for standalone `$`: use `"$"`, not `"\$"`.
+
+11. **brew shellenv ordering**
+    - If tools like starship, zoxide, eza are installed via Homebrew/Linuxbrew, `eval "$(brew shellenv)"` must be called **before** `command -v starship` or any `command -v` check.
+    - The typical error: `command -v starship` returns empty at shell init because brew is not yet in `$PATH`, causing starship to silently skip initialization.
+    - Fix: place `eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"` right after Oh My Zsh (or early in `.zshrc`), before any tool init blocks.
+
+12. **`alias -="..."` is invalid in zsh**
+    - `-` is parsed as an option flag to the `alias` builtin, not as an alias name.
+    - Use `alias -- -='cd -'` if you really want an alias named `-`, or define a function: `function --() { cd -; }`.
+    - Better: just omit `-` aliases; zsh already has `cd -` built-in.
+
+13. **Hardcoded `$PATH` overrides**
+    - Using `export PATH="/some/dir:/other/dir"` (hardcoded, no `$PATH`) **overwrites** the entire path, silently removing earlier additions (brew, cargo, npm-global, etc.).
+    - Tools installed via brew will appear to work at shell start (if init runs before the override) but fail when used later (eza, zoxide, etc.).
+    - Fix: always use `export PATH="/new/dir:$PATH"` (prepend) or `export PATH="$PATH:/new/dir"` (append) to preserve existing entries.
 
 ## Verification Checklist
 
@@ -221,6 +284,10 @@ All scripts are in `scripts/`:
 - [ ] Presented auth/setup status for installed agent CLIs
 - [ ] Presented a final install plan
 - [ ] Asked for confirmation before changes
+- [ ] Backup created before modifying config
 - [ ] Executed only approved install/config actions
+- [ ] Verified PATH ordering: `brew shellenv` (or equivalent) before `command -v` checks for brew-installed tools
+- [ ] Validated `starship.toml` has no invalid TOML escapes (`\$` → `$`)
 - [ ] Re-ran audit after changes
+- [ ] Did a fresh login (SSH or new terminal) to confirm prompt loads without errors
 - [ ] Summarized remaining auth or manual steps
